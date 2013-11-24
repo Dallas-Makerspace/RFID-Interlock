@@ -20,10 +20,15 @@ public class RFID_Interlock
 		
 	private RFID_AuthResponse ar;
 	private RFID_Timer timer;
+	
+	private static BBB_DIGITAL_GPIO mPin;
 
 	@SuppressWarnings("unused")
 	public static void main(String args[]) {
 		RFID_Settings.loadSettings();
+		
+		if (RFID_Settings.enableBBHW) mPin = new BBB_DIGITAL_GPIO(true, RFID_Settings.machinePin, RFID_Settings.debug);
+		
 		RFID_Interlock rfid_app = new RFID_Interlock(true);
     }
 	
@@ -92,6 +97,8 @@ public class RFID_Interlock
 	
 	private void enableMachine() {
 		System.out.println("On");
+		if (RFID_Settings.enableBBHW) mPin.enablePin();
+		
 		if (timer != null && timer.isAlive()) timer.stopTimer();
 		timer = new RFID_Timer(ar.getAuthTime() * 1000);
 		timer.start();
@@ -99,6 +106,7 @@ public class RFID_Interlock
 	
 	public static void disableMachine() {
 		System.out.println("\nOff");
+		if (RFID_Settings.enableBBHW) mPin.disablePin();
 	}
 }
 
