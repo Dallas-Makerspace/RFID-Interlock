@@ -49,6 +49,7 @@ public class RFID_Timer extends Thread {
 	}
 	
 	public void stopTimer() {
+		if (RFID_Settings.debug) System.out.println("Timer: Stop");
 		run = false;
 	}
 }

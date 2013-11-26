@@ -19,15 +19,19 @@ public class RFID_Interlock
 	private String input = "";
 		
 	private RFID_AuthResponse ar;
-	private RFID_Timer timer;
+	private static RFID_Timer timer;
 	
-	private static BBB_DIGITAL_GPIO mPin;
+	private static GPIO_DigitalPin mPin;
+	private static RFID_ButtonListener button;
 
 	@SuppressWarnings("unused")
 	public static void main(String args[]) {
 		RFID_Settings.loadSettings();
 		
-		if (RFID_Settings.enableBBHW) mPin = new BBB_DIGITAL_GPIO(true, RFID_Settings.machinePin, RFID_Settings.debug);
+		if (RFID_Settings.enableBBHW) mPin = new GPIO_DigitalPinBBB(true, RFID_Settings.machinePin, RFID_Settings.debug);
+		else if (RFID_Settings.enableRPiHW) mPin = new GPIO_DigitalPinRpi(true, RFID_Settings.machinePin, RFID_Settings.debug);
+		
+		if (RFID_Settings.enableBBHW || RFID_Settings.enableRPiHW) button = new RFID_ButtonListener(RFID_Settings.buttonPin, 10);
 		
 		RFID_Interlock rfid_app = new RFID_Interlock(true);
     }
@@ -53,9 +57,12 @@ public class RFID_Interlock
 				//System.out.println("You Entered: " + input);
 				
 				if (input.equalsIgnoreCase("quit") || input.equalsIgnoreCase("exit")) {
-					run = false;
-					System.out.println("Exiting");
+					quit();
 					return;
+				}
+				else if (input.equalsIgnoreCase("stop")) {
+					System.out.println("Stop Request Detected");
+					RFID_Interlock.disableMachine();
 				}
 				else if (isValidId(input)) {
 					String builtUrl = buildURL(input);
@@ -97,16 +104,39 @@ public class RFID_Interlock
 	
 	private void enableMachine() {
 		System.out.println("On");
-		if (RFID_Settings.enableBBHW) mPin.enablePin();
+		if (RFID_Settings.enableBBHW || RFID_Settings.enableRPiHW) {
+			mPin.enablePin();
+			
+			if (RFID_Settings.debug) System.out.println("Starting Button Listener");
+			button.startListening();
+		}
 		
 		if (timer != null && timer.isAlive()) timer.stopTimer();
-		timer = new RFID_Timer(ar.getAuthTime() * 1000);
-		timer.start();
+		if (ar.getAuthTime() > 0) {
+			if (RFID_Settings.debug) System.out.println("Starting Countdown Timer");
+			timer = new RFID_Timer(ar.getAuthTime() * 1000);
+			timer.start();
+		}
 	}
 	
 	public static void disableMachine() {
 		System.out.println("\nOff");
-		if (RFID_Settings.enableBBHW) mPin.disablePin();
+		if (RFID_Settings.enableBBHW || RFID_Settings.enableRPiHW) { 
+			mPin.disablePin();
+			button.quitListening();
+			timer.stopTimer();
+		}
+	}
+	
+	private void quit() {
+		run = false;
+		if (timer != null && timer.isAlive()) timer.stopTimer();
+		if (button != null && button.isAlive()) {
+			button.quitListening();
+			button.stop();
+		}
+		
+		System.out.println("Exiting");
 	}
 }
 

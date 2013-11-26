@@ -22,8 +22,10 @@ public class RFID_Settings {
 	public static boolean debug = false;
 	public static boolean consoleMode = true;
 	public static boolean enableBBHW = false;
+	public static boolean enableRPiHW = false;
 	
 	public static String machinePin = "0";
+	public static String buttonPin = "0";
 	
 	public static void loadSettings() {
 		try {
@@ -69,10 +71,12 @@ public class RFID_Settings {
 			else if (sp[0].contains("badgeVar")) badgeVar = val;
 			else if (sp[0].contains("toolVar"))  toolVar  = val;
 			else if (sp[0].contains("toolId"))   toolId   = val;
-			else if (sp[0].contains("debug"))    debug = sp[1].trim().contains("true");
+			else if (sp[0].contains("debug"))    debug    = sp[1].trim().contains("true");
 			else if (sp[0].contains("consoleMode")) consoleMode = sp[1].trim().contains("true");
 			else if (sp[0].contains("enableBBHW"))  enableBBHW  = sp[1].trim().contains("true");
+			else if (sp[0].contains("enableRPiHW")) enableRPiHW = sp[1].trim().contains("true");
 			else if (sp[0].contains("machinePin"))  machinePin  = val;
+			else if (sp[0].contains("buttonPin"))   buttonPin   = val;
 			
 			if (debug) System.out.println("var: " + sp[0] + " val: " + val);
 		}

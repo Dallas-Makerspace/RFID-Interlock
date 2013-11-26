@@ -10,10 +10,9 @@ import java.io.PrintWriter;
  * 
  * @author Mikel
  *
- * Class for static methods to handle hardware GPIO for the BeagleBoneBlack
  */
 
-public class BBB_DIGITAL_GPIO {
+public class GPIO_DigitalPinRpi extends GPIO_DigitalPin {
 	private String pin = "";
 	private boolean output = true;
 	private boolean debug = false;
@@ -26,8 +25,8 @@ public class BBB_DIGITAL_GPIO {
 	PrintWriter pw;
 	
 	FileInputStream in;
-	
-	public BBB_DIGITAL_GPIO(boolean outputPin, String pin, boolean debug) {
+		
+	public GPIO_DigitalPinRpi(boolean outputPin, String pin, boolean debug) {
 		this.output = outputPin;
 		this.pin = pin;
 		this.debug = debug;
@@ -44,7 +43,7 @@ public class BBB_DIGITAL_GPIO {
 			pw.close();
 		}
 		catch (FileNotFoundException e) {
-			System.out.println("File Not Found, Are you sure this is a BBB? " + e);
+			System.out.println("File Not Found, Are you sure this is a RPi? " + e);
 			try {
 				out.close();
 			} catch (IOException e1) {
@@ -70,7 +69,7 @@ public class BBB_DIGITAL_GPIO {
 				enabled = true;
 			}
 			catch (FileNotFoundException e) {
-				System.out.println("File Not Found, Are you sure this is a BBB? " + e);
+				System.out.println("File Not Found, Are you sure this is a RPi? " + e);
 			}
 			catch (IOException e) {
 				System.out.println("IOException: " + e);
@@ -84,6 +83,7 @@ public class BBB_DIGITAL_GPIO {
 				pw = new PrintWriter(out);
 				pw.print("in");
 				pw.close();
+				out.close();
 				
 				//setup pw for io
 				in = new FileInputStream("/sys/class/gpio/gpio" + pin + "/value");
@@ -91,15 +91,15 @@ public class BBB_DIGITAL_GPIO {
 				enabled = true;
 			}
 			catch (FileNotFoundException e) {
-				System.out.println("File Not Found, Are you sure this is a BBB? " + e);
+				System.out.println("File Not Found, Are you sure this is a RPi? " + e);
+			}
+			catch (IOException e) {
+				System.out.println("IOException: " + e);
 			}
 		}
 	}
-	
-	public void setDebug(boolean d) {
-		debug = d;
-	}
-	
+
+	@Override
 	public void enablePin() {
 		if (enabled) {
 			if (debug) System.out.println("Enable: " + pin);
@@ -121,7 +121,8 @@ public class BBB_DIGITAL_GPIO {
 			}
 		}
 	}
-	
+
+	@Override
 	public void disablePin() {
 		if (enabled) {
 			if (debug) System.out.println("Disable: " + pin);
@@ -143,7 +144,8 @@ public class BBB_DIGITAL_GPIO {
 			}
 		}
 	}
-	
+
+	@Override
 	public void close() {
 		try {
 			pw.close();
@@ -153,18 +155,22 @@ public class BBB_DIGITAL_GPIO {
 			System.out.println("Error closing gpio stream: " + e);
 		}
 	}
-	
-	//TODO test this
+
+	@Override
 	public int getValue() {
 		int val = 0;
 		if (output) return val;
 		else {
 			try {
-				val = in.read() - 48; //48?
+				in = null;
+				in = new FileInputStream("/sys/class/gpio/gpio" + pin + "/value");
+				val = in.read() - 48; //48 is 0 Off for some reason
+				in.close();
 			} catch (IOException e) {
 				System.out.println("Error reading input value: " + e);
 			}
 		}
 		return val;
 	}
+
 }
