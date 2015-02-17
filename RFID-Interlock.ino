@@ -25,8 +25,15 @@ char uri[32];
 
 const int ledPin =  9;
 const int stopButtonPin = 8;
+const int buzzerPin = 5;
+const int relayPin = 7;
 
 void setup() {
+  // Starting boot-up
+  tone(buzzerPin, 1568, 400);
+  delay(400);
+  noTone(buzzerPin);
+  
   Serial.begin(9600);
   while (!Serial) {
     ; // wait for serial port to connect. Needed for Leonardo only
@@ -45,14 +52,20 @@ void setup() {
   delay(1000);
 
   // initialize the LED pin as an output:
-  pinMode(ledPin, OUTPUT);      
-  // initialize the pushbutton pin as an input:
+  pinMode(ledPin, OUTPUT);
+  pinMode(relayPin, OUTPUT);
+  
+  // initialize the button pin as an input:
   pinMode(stopButtonPin, INPUT);
+  
   // turn on pullup resistors
   digitalWrite(stopButtonPin, HIGH); 
-  
+    
   // Start RFID reader
   rfid.begin();
+  
+  // Tell the world we're ready
+  allowTone();
 }
 
 void loop() {
@@ -83,14 +96,16 @@ void loop() {
           if (err >= 0) {
             Serial.println("Authorized!");
             activate();
+            allowTone();
           } else {
             Serial.print("Failed to skip response headers: ");
             Serial.println(err);
             deactivate();
           }
-        } else {    
+        } else {
           Serial.print("Getting response failed: ");
           Serial.println(err);
+          denyTone();
           deactivate();
         }
       } else {
@@ -107,6 +122,7 @@ void activate()
 {
   interlockState = 1;
   digitalWrite(ledPin, HIGH);
+  digitalWrite(relayPin, HIGH);
   Serial.println("Device activated!");
 }
 
@@ -114,6 +130,7 @@ void deactivate()
 {
   interlockState = 0;
   digitalWrite(ledPin, LOW);
+  digitalWrite(relayPin, LOW);
   Serial.println("Device de-activated!");
 
   Serial.println("Notifying server of device shutdown.");
@@ -137,4 +154,30 @@ void deactivate()
     Serial.println(err);
   }
   http.stop();
+}
+
+void denyTone()
+{
+  digitalWrite(ledPin, HIGH);
+  tone(buzzerPin, 262, 200);
+  delay(200);
+  digitalWrite(ledPin, LOW);
+  tone(buzzerPin, 262, 200);
+  delay(200);
+  digitalWrite(ledPin, HIGH);
+  tone(buzzerPin, 262, 600);
+  delay(600);
+  digitalWrite(ledPin, LOW);
+  noTone(buzzerPin);
+}
+
+void allowTone()
+{
+  tone(buzzerPin, 262, 200);
+  delay(200);
+  tone(buzzerPin, 262, 200);
+  delay(200);
+  tone(buzzerPin, 1568, 400);
+  delay(400);
+  noTone(buzzerPin);
 }
