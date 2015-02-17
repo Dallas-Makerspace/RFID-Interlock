@@ -9,20 +9,12 @@ WIEGAND rfid;
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-// Set the static IP address to use if the DHCP fails to assign
-IPAddress ip(192,168,0,20);
 
-// if you don't want to use DNS (and reduce your sketch size)
-// use the numeric IP instead of the name for the server:
-//IPAddress server(192,168,0,100);
 const char server[] = "192.168.0.100";
-//const char server[] = "www.google.com";    // name address for Google (using DNS)
+//const char server[] = "www.google.com";
 
 const char script[] = "/test.php?device=12";
 
-// Initialize the Ethernet client library
-// with the IP address and port of the server 
-// that you want to connect to (port 80 is default for HTTP):
 EthernetClient client;
 
 // 0 = off
@@ -40,18 +32,14 @@ void setup() {
     ; // wait for serial port to connect. Needed for Leonardo only
   }
   
-  // Start RFID reader
-  rfid.begin();
-
   // start the Ethernet connection:
-  if (Ethernet.begin(mac) == 0) {
+  while (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
-    // no point in carrying on, so do nothing forevermore:
-    // try to congifure using IP address instead of DHCP:
-    Ethernet.begin(mac, ip);
-  } else {
-    Serial.println("Connected via DHCP");
+    Serial.println("Sleeping for 5 seconds");
+    delay(5000);
   }
+  
+  Serial.println("Connected via DHCP");
   
   // give the Ethernet shield a second to initialize:
   delay(1000);
@@ -62,11 +50,14 @@ void setup() {
   pinMode(stopButtonPin, INPUT);
   // turn on pullup resistors
   digitalWrite(stopButtonPin, HIGH); 
+  
+  // Start RFID reader
+  rfid.begin();
 }
 
 void loop() {
   int buttonState = digitalRead(stopButtonPin);
-  if (buttonState == LOW) {
+  if (interlockState == 1 && buttonState == LOW) {
     deactivate();
   } else {
     if(rfid.available()) {
@@ -79,6 +70,7 @@ void loop() {
       Serial.print(", Type W");
       Serial.println(rfid.getWiegandType());
 
+      Serial.println("Checking server for authorization.");
       sprintf(uri, "%s&tag=%lu", script, tag);
     
       EthernetClient c;
@@ -120,6 +112,10 @@ void activate()
 
 void deactivate()
 {
+  interlockState = 0;
+  digitalWrite(ledPin, LOW);
+  Serial.println("Device de-activated!");
+
   Serial.println("Notifying server of device shutdown.");
 
   sprintf(uri, "%s&status=shutdown", script);
@@ -141,8 +137,4 @@ void deactivate()
     Serial.println(err);
   }
   http.stop();
-
-  interlockState = 0;
-  digitalWrite(ledPin, LOW);
-  Serial.println("Device de-activated!");
 }
