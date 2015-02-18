@@ -59,7 +59,9 @@ void setup() {
   pinMode(stopButtonPin, INPUT);
   
   // turn on pullup resistors
-  digitalWrite(stopButtonPin, HIGH); 
+  digitalWrite(stopButtonPin, HIGH);
+  digitalWrite(ledPin, HIGH);
+  digitalWrite(relayPin, LOW);
     
   // Start RFID reader
   rfid.begin();
@@ -121,7 +123,7 @@ void loop() {
 void activate()
 {
   interlockState = 1;
-  digitalWrite(ledPin, HIGH);
+  digitalWrite(ledPin, LOW);
   digitalWrite(relayPin, HIGH);
   Serial.println("Device activated!");
 }
@@ -129,7 +131,7 @@ void activate()
 void deactivate()
 {
   interlockState = 0;
-  digitalWrite(ledPin, LOW);
+  digitalWrite(ledPin, HIGH);
   digitalWrite(relayPin, LOW);
   Serial.println("Device de-activated!");
 
@@ -158,16 +160,16 @@ void deactivate()
 
 void denyTone()
 {
-  digitalWrite(ledPin, HIGH);
-  tone(buzzerPin, 262, 200);
-  delay(200);
   digitalWrite(ledPin, LOW);
   tone(buzzerPin, 262, 200);
   delay(200);
   digitalWrite(ledPin, HIGH);
+  tone(buzzerPin, 262, 200);
+  delay(200);
+  digitalWrite(ledPin, LOW);
   tone(buzzerPin, 262, 600);
   delay(600);
-  digitalWrite(ledPin, LOW);
+  digitalWrite(ledPin, HIGH);
   noTone(buzzerPin);
 }
 
